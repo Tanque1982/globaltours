@@ -1,4 +1,5 @@
 
+using System.Net;
 using API.Helpers;
 using Core.Interfaces;
 using Infraestructura.Datos;
@@ -7,6 +8,17 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+var port = Environment.GetEnvironmentVariable("PORT") ?? "3000";
+builder.WebHost.UseKestrel()
+        .ConfigureKestrel((context, options) =>
+        {
+            options.Listen(IPAddress.Any, Int32.Parse(port), listenOptions =>
+            {
+                
+            });
+        });
+
+Console.WriteLine("Puerto Heroku: "+port);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaulConnection");
 
@@ -22,6 +34,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ILugarRepositorio, LugarRepositorio>();
 builder.Services.AddScoped(typeof(IRepositorio<>),(typeof(Repositorio<>)));
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+builder.Services.AddCors();
 
 var app = builder.Build();
 
@@ -46,13 +60,19 @@ using(var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+app.UseCors(x => x.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader());
 
 app.UseStaticFiles();
 
